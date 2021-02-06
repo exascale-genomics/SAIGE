@@ -52,6 +52,7 @@ public:
 	arma::ivec	MACVec; //for variance ratio based on different MAC categories
 	arma::ivec	subMarkerIndex; //for sparse GRM
 	arma::fmat      stdGenoMultiMarkersMat;	
+        arma::fmat      fullGRM;
 	std::vector<float> stdGenoforSamples; //for sparse GRM
 	std::vector<float>     kinValueVecFinal;
         float relatednessCutoff;
@@ -185,6 +186,53 @@ public:
                 }
 
                 return & m_OneSNP_Geno;
+        }
+  
+
+        static inline arma::fmat xtx_gemm(const arma::fmat &x)
+        {
+            const int M = x.n_rows;
+            const int N = x.n_cols;
+            arma::fmat ret(N, N);
+ 
+            const char op_T = 'T';
+            const char op_N = 'N';
+            const int m = N;
+            const int n = N;
+            const int k = M;
+            float alpha = 1.0;
+ 
+            const int lda = M;
+            const int ldb = M;
+            float beta = 0.0;
+            const int ldc = N;
+ 
+            arma::blas::gemm(&op_T, &op_N, &m, &n, &k, &alpha, x.memptr(), &lda,
+            x.memptr(), &ldb, &beta, ret.memptr(), &ldc);
+            return ret;
+        }
+
+        ////get GRM
+        //// [[Rcpp::export]]
+        arma::fmat  getFullGRM(){
+            unsigned int M = getM();  //snp count
+            unsigned int N = getNnomissing(); //sample count
+
+            std::cout<<"M by N size: "<<M<<" M, "<<N<<" N"<<std::endl;
+
+            arma::fmat grm(M,N);
+	    arma::frowvec vec;
+
+	    for(unsigned int i = 0; i < M; i++){
+                Get_OneSNP_StdGeno_alex(i, &vec);
+                grm.row(i) = vec;
+            }
+
+            arma::fmat resultGRM = xtx_gemm(grm)/M;
+            //arma::fmat resultGRM = xtx_gemm(stdGenoMultiMarkersMat)/M;
+            std::cout << "Size in bytes of fullGRM is:" << sizeof(resultGRM/M) << std::endl;
+	    return(resultGRM); 
+            //return(grm);
        }
    
 	arma::ivec * Get_OneSNP_Geno_atBeginning(size_t SNPIdx, vector<int> & indexNA, vector<unsigned char> & genoVecOneMarkerOld){
@@ -243,6 +291,75 @@ public:
 
 	}
 
+
+        int Get_OneSNP_StdGeno_alex(size_t SNPIdx, arma::frowvec * out ){
+                //avoid large continuous memory usage
+                int indexOfVectorPointer = SNPIdx/numMarkersofEachArray;
+                int SNPIdxinVec = SNPIdx % numMarkersofEachArray;
+                ////////////////
+                //std::cout<<"HERE1"<<std::endl;
+                out->zeros(Nnomissing);
+                //std::cout<<"HERE2"<<std::endl;
+                size_t Start_idx = m_size_of_esi * SNPIdxinVec;
+                size_t ind= 0;
+                unsigned char geno1;
+
+                float freq = alleleFreqVec[SNPIdx];
+//              cout << "Get_OneSNP_StdGeno here" << endl;
+                float invStd = invstdvVec[SNPIdx];
+
+                arma::fvec stdGenoLookUpArr(3);
+                setStdGenoLookUpArr(freq, invStd, stdGenoLookUpArr);
+
+                //setStdGenoLookUpArr(freq, invStd);
+                //std::cout << "stdGenoLookUpArr[0]: " << stdGenoLookUpArr[0] << std::endl;
+                //std::cout << "stdGenoLookUpArr[1]: " << stdGenoLookUpArr[1] << std::endl;
+                //std::cout << "stdGenoLookUpArr[2]: " << stdGenoLookUpArr[2] << std::endl;
+//              cout << "Get_OneSNP_StdGeno here2"  << endl;
+                for(size_t i=Start_idx; i< Start_idx+m_size_of_esi-1; i++){
+//                      geno1 = genoVec[i];
+                        geno1 = genoVecofPointers[indexOfVectorPointer]->at(i);
+
+                        for(int j=0; j<4; j++){
+                        int b = geno1 & 1 ;
+                        geno1 = geno1 >> 1;
+                        int a = geno1 & 1 ;
+                        //(*out)[ind] = ((2-(a+b)) - 2*freq)* invStd;;
+                        (*out)[ind] = stdGenoLookUpArr(2-(a+b));
+                        ind++;
+                        geno1 = geno1 >> 1;
+
+//                      if(ind >= Nnomissing){
+//                              cout << "Get_OneSNP_StdGeno " << SNPIdx << endl;
+//                              cout << "Nnomissing " << Nnomissing << endl;
+//                              stdGenoLookUpArr.clear();
+//                              return 1;
+//                      }
+                        }
+                }
+
+
+                size_t i = Start_idx+m_size_of_esi-1;
+                geno1 = genoVecofPointers[indexOfVectorPointer]->at(i);
+
+                for(int j=0; j<4; j++){
+                        int b = geno1 & 1 ;
+                        geno1 = geno1 >> 1;
+                        int a = geno1 & 1 ;
+                        (*out)[ind] = stdGenoLookUpArr(2-(a+b));
+                        ind++;
+                        geno1 = geno1 >> 1;
+
+                        if(ind >= Nnomissing){
+                                stdGenoLookUpArr.clear();
+                                return 1;
+                        }
+                }
+
+                stdGenoLookUpArr.clear();
+                return 1;
+
+        }
 
 
  	int Get_OneSNP_StdGeno(size_t SNPIdx, arma::fvec * out ){
@@ -681,6 +798,9 @@ public:
 		//printGenoVec();
    		//Get_Diagof_StdGeno();
 		cout << "setgeno mark6" << endl;
+
+		fullGRM = getFullGRM();
+                cout << "Size in bytes of fullGRM is:" << sizeof(fullGRM) << endl;
   	}//End Function
  
 
@@ -696,7 +816,10 @@ public:
 		cout << endl;
   	}
  
-  
+	arma::fmat completeGRM(){
+            return(fullGRM);
+	}
+
   	int getM() const{
     		return(M);
   	}
@@ -1199,9 +1322,24 @@ struct CorssProd_LOCO : public Worker
         }
 };
 
+/*
+////get GRM
+// [[Rcpp::export]]
+arma::fmat getFullGRM(){
+    unsigned int M = geno.getM();  //snp count
+    unsigned int N = geno.getNnomissing(); //sample count
 
+    std::cout<<"M by N size: "<<M<<" M, "<<N<<" N"<<std::endl;
 
-
+    arma::fmat grm(M,N);
+    arma::frowvec vec;
+    for(unsigned int i = 0; i < M; i++){
+        geno.Get_OneSNP_StdGeno_alex(i, &vec);
+	grm.row(i) = vec;
+    }
+    return(grm);
+};
+**/
 
 
 // [[Rcpp::export]]
@@ -1298,7 +1436,25 @@ bool isUseSparseSigmaforInitTau = false;
 
 // [[Rcpp::export]]
 arma::fvec getCrossprodMatAndKin(arma::fcolvec& bVec){
-       arma::fvec crossProdVec;
+        arma::fvec crossProdVec;
+        arma::fmat GRM;
+
+	//std::cout<<"HERE1"<<std::endl;
+        GRM =  geno.completeGRM();
+        //std::cout<<"HERE2"<<std::endl;
+        const char ctransx = 'T';
+        const char ctransy = 'N';
+        const int m = geno.getNnomissing();  //sample count
+        const int n = 1; // number of columns in bVec
+        //const int k = geno.getM();  //snp count
+        const int k = m;  //snp count
+        float alpha = 1.0;
+        const int lda = k;    // GRM.nrows
+        const int ldb = m;    // bVec.nrows
+        float beta = 0.0;
+        const int ldc = m;
+        //arma::fmat GRM(geno.completeGRM(), k, m, false, true);
+        arma::fmat resultVec(k,n);
 
 if(isUseSparseSigmaforInitTau){
         cout << "use sparse kinship to estimate initial tau and for getCrossprodMatAndKin" <<  endl;
@@ -1314,10 +1470,35 @@ if(isUseSparseSigmaforInitTau){
 
     crossProdVec = arma::conv_to<arma::fvec>::from(x);
 
-}else{ 
-  	crossProdVec = parallelCrossProd(bVec) ;
-}  
-  	return(crossProdVec);
+}else{
+        //bVec.print("bVec:");
+        //crossProdVec = parallelCrossProd(bVec) ;
+        //crossProdVec.print("crossProdVec:");
+
+        // ALEX: Do the cross-matrix-vector multiplication here: GRM x bVec
+        ////crossProdVec = (GRM * bVec);
+        ////matmult(true, false, 1.0, GRM, bVec, resultVec);
+	//std::cout << "HI THERE" << std::endl;
+        //std::cout << "GRM rows: " << GRM.n_rows << std::endl;
+        //std::cout << "GRM cols: " << GRM.n_cols << std::endl;
+        //std::cout << "bVec rows: " << bVec.n_rows << std::endl;
+        //std::cout << "bVec cols: " << bVec.n_cols << std::endl;
+        //std::cout << "resultVec rows: " << resultVec.n_rows << std::endl;
+        //std::cout << "resultVec cols: " << resultVec.n_cols << std::endl;
+        //std::cout << "crossProdVec rows: " << crossProdVec.n_rows << std::endl;
+        //std::cout << "crossProdVec cols: " << crossProdVec.n_cols << std::endl;
+
+        //std::cout << "Size in bytes of GRM is:" << sizeof(GRM) << std::endl;
+        //std::cout << "Size in bytes of bVec is:" << sizeof(bVec) << std::endl;
+	arma::blas::gemm(&ctransx, &ctransy, &m, &n, &k, &alpha, GRM.memptr(), &lda, bVec.memptr(), &ldb, &beta, resultVec.memptr(), &ldc);
+        //std::cout << "resultVec rows: " << resultVec.n_rows << std::endl;
+        //std::cout << "resultVec cols: " << resultVec.n_cols << std::endl;
+        //std::cout << "crossProdVec rows: " << crossProdVec.n_rows << std::endl;
+        //std::cout << "crossProdVec cols: " << crossProdVec.n_cols << std::endl;
+        //                        
+}
+        //return(crossProdVec);
+	return(resultVec);
 }
 
 
