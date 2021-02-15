@@ -1418,6 +1418,10 @@ void setupSparseGRM(int r, arma::umat & locationMatinR, arma::vec & valueVecinR)
 }
 
 
+
+bool isUsePrecondM = false;
+bool isUseSparseSigmaforInitTau = false;
+
 // [[Rcpp::export]]
 arma::fvec getCrossprodMatAndKin(arma::fcolvec& bVec){
   return geno.grm_times_vec(bVec);
