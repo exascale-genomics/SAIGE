@@ -1,3 +1,4 @@
+#define ARMA_DONT_USE_WRAPPER
 #define ARMA_USE_SUPERLU 1
 //[[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
@@ -12,6 +13,9 @@
 #include <ctime>// include this header for calculating execution time 
 #include <cassert>
 #include <boost/date_time.hpp> // for gettimeofday and timeval
+
+#include "linalg.hpp"
+
 using namespace Rcpp;
 using namespace std;
 using namespace RcppParallel;
@@ -189,29 +193,6 @@ public:
         }
   
 
-        static inline arma::fmat xtx_gemm(const arma::fmat &x)
-        {
-            const int M = x.n_rows;
-            const int N = x.n_cols;
-            arma::fmat ret(N, N);
- 
-            const char op_T = 'T';
-            const char op_N = 'N';
-            const int m = N;
-            const int n = N;
-            const int k = M;
-            float alpha = 1.0;
- 
-            const int lda = M;
-            const int ldb = M;
-            float beta = 0.0;
-            const int ldc = N;
- 
-            arma::blas::gemm(&op_T, &op_N, &m, &n, &k, &alpha, x.memptr(), &lda,
-            x.memptr(), &ldb, &beta, ret.memptr(), &ldc);
-            return ret;
-        }
-
         ////get GRM
         //// [[Rcpp::export]]
         arma::fmat  getFullGRM(){
@@ -228,8 +209,7 @@ public:
                 grm.row(i) = vec;
             }
 
-            arma::fmat resultGRM = xtx_gemm(grm)/M;
-            //arma::fmat resultGRM = xtx_gemm(stdGenoMultiMarkersMat)/M;
+            arma::fmat resultGRM = xtx_gemm((float)1.f/M, grm);
             std::cout << "Size in bytes of fullGRM is:" << sizeof(resultGRM/M) << std::endl;
 	    return(resultGRM); 
             //return(grm);
@@ -1436,69 +1416,22 @@ bool isUseSparseSigmaforInitTau = false;
 
 // [[Rcpp::export]]
 arma::fvec getCrossprodMatAndKin(arma::fcolvec& bVec){
-        arma::fvec crossProdVec;
-        arma::fmat GRM;
-
-	//std::cout<<"HERE1"<<std::endl;
-        GRM =  geno.completeGRM();
-        //std::cout<<"HERE2"<<std::endl;
-        const char ctransx = 'T';
-        const char ctransy = 'N';
-        const int m = geno.getNnomissing();  //sample count
-        const int n = 1; // number of columns in bVec
-        //const int k = geno.getM();  //snp count
-        const int k = m;  //snp count
-        float alpha = 1.0;
-        const int lda = k;    // GRM.nrows
-        const int ldb = m;    // bVec.nrows
-        float beta = 0.0;
-        const int ldc = m;
-        //arma::fmat GRM(geno.completeGRM(), k, m, false, true);
-        arma::fmat resultVec(k,n);
-
-if(isUseSparseSigmaforInitTau){
-        cout << "use sparse kinship to estimate initial tau and for getCrossprodMatAndKin" <<  endl;
-	arma::sp_mat result(locationMat, valueVec, dimNum, dimNum);
-	arma::vec x = result * arma::conv_to<arma::dcolvec>::from(bVec);
-
-
-//double wall3in = get_wall_time();
-// double cpu3in  = get_cpu_time();
-// cout << "Wall Time in gen_spsolve_v4 = " << wall3in - wall2in << endl;
-// cout << "CPU Time  in gen_spsolve_v4 = " << cpu3in - cpu2in  << endl;
-
-
+  arma::fvec crossProdVec;
+  arma::fmat GRM = geno.completeGRM();
+  // const int m = geno.getNnomissing();  //sample count
+  arma::fvec resultVec(GRM.n_rows);
+  
+  if(isUseSparseSigmaforInitTau){
+    cout << "use sparse kinship to estimate initial tau and for getCrossprodMatAndKin" <<  endl;
+    arma::sp_mat result(locationMat, valueVec, dimNum, dimNum);
+    arma::vec x = result * arma::conv_to<arma::dcolvec>::from(bVec);
+    
     crossProdVec = arma::conv_to<arma::fvec>::from(x);
-
-}else{
-        //bVec.print("bVec:");
-        //crossProdVec = parallelCrossProd(bVec) ;
-        //crossProdVec.print("crossProdVec:");
-
-        // ALEX: Do the cross-matrix-vector multiplication here: GRM x bVec
-        ////crossProdVec = (GRM * bVec);
-        ////matmult(true, false, 1.0, GRM, bVec, resultVec);
-	//std::cout << "HI THERE" << std::endl;
-        //std::cout << "GRM rows: " << GRM.n_rows << std::endl;
-        //std::cout << "GRM cols: " << GRM.n_cols << std::endl;
-        //std::cout << "bVec rows: " << bVec.n_rows << std::endl;
-        //std::cout << "bVec cols: " << bVec.n_cols << std::endl;
-        //std::cout << "resultVec rows: " << resultVec.n_rows << std::endl;
-        //std::cout << "resultVec cols: " << resultVec.n_cols << std::endl;
-        //std::cout << "crossProdVec rows: " << crossProdVec.n_rows << std::endl;
-        //std::cout << "crossProdVec cols: " << crossProdVec.n_cols << std::endl;
-
-        //std::cout << "Size in bytes of GRM is:" << sizeof(GRM) << std::endl;
-        //std::cout << "Size in bytes of bVec is:" << sizeof(bVec) << std::endl;
-	arma::blas::gemm(&ctransx, &ctransy, &m, &n, &k, &alpha, GRM.memptr(), &lda, bVec.memptr(), &ldb, &beta, resultVec.memptr(), &ldc);
-        //std::cout << "resultVec rows: " << resultVec.n_rows << std::endl;
-        //std::cout << "resultVec cols: " << resultVec.n_cols << std::endl;
-        //std::cout << "crossProdVec rows: " << crossProdVec.n_rows << std::endl;
-        //std::cout << "crossProdVec cols: " << crossProdVec.n_cols << std::endl;
-        //                        
-}
-        //return(crossProdVec);
-	return(resultVec);
+  }else{
+    mvp_gemv(GRM, bVec, resultVec);
+  }
+  
+  return(resultVec);
 }
 
 
