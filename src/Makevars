@@ -1,8 +1,10 @@
 CXX_STD = CXX11 
 
-#WARNFLAGS = -Wall -Wextra -pedantic
 LINALGLIBS = -lopenblas
 OPTFLAGS = -O3 -mcpu=native
+
+#WARNFLAGS = -Wall -Wextra -pedantic
+WARNFLAGS = -w
 
 #-------------------------------------------------------------------------------
 
