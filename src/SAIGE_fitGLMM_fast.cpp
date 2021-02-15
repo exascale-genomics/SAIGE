@@ -938,7 +938,13 @@ public:
 	}
 
 
-
+  arma::fvec grm_times_vec(arma::fcolvec& bVec){
+    arma::fvec resultVec(fullGRM.n_rows);
+    
+    mvp_gemv(fullGRM, bVec, resultVec);
+    
+    return(resultVec);
+  }
   
 };
 
@@ -1411,27 +1417,10 @@ void setupSparseGRM(int r, arma::umat & locationMatinR, arma::vec & valueVecinR)
     //return x;
 }
 
-bool isUsePrecondM = false;
-bool isUseSparseSigmaforInitTau = false;
 
 // [[Rcpp::export]]
 arma::fvec getCrossprodMatAndKin(arma::fcolvec& bVec){
-  arma::fvec crossProdVec;
-  arma::fmat GRM = geno.completeGRM();
-  // const int m = geno.getNnomissing();  //sample count
-  arma::fvec resultVec(GRM.n_rows);
-  
-  if(isUseSparseSigmaforInitTau){
-    cout << "use sparse kinship to estimate initial tau and for getCrossprodMatAndKin" <<  endl;
-    arma::sp_mat result(locationMat, valueVec, dimNum, dimNum);
-    arma::vec x = result * arma::conv_to<arma::dcolvec>::from(bVec);
-    
-    crossProdVec = arma::conv_to<arma::fvec>::from(x);
-  }else{
-    mvp_gemv(GRM, bVec, resultVec);
-  }
-  
-  return(resultVec);
+  return geno.grm_times_vec(bVec);
 }
 
 
