@@ -38,6 +38,7 @@ OBJECTS = $(SAIGE_OBJECTS) $(GPU_OBJECTS)
 
 R_SCMD = ${R_HOME}/bin${R_ARCH_BIN}/Rscript -e
 ARMA_FLAGS = $(shell ${R_SCMD} "RcppArmadillo:::CxxFlags()")
+PKG_LIBS += -lcudart -lcublas
 
 %.o: %.cu
 	$(NVCC) -DGPU -O2 -x cu -c -arch=sm_61 -Xcompiler "-fPIC $(ARMA_FLAGS)" $< -o $@
