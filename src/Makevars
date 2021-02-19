@@ -1,6 +1,7 @@
 CXX_STD = CXX11 
 
 NVCC = nvcc
+CUDA_LIBS = -L/sw/summit/cuda/11.1.0/lib64 -lcudart -lcublas
 
 LINALGLIBS = -lopenblas
 OPTFLAGS = -g0 -O3 -mcpu=native
@@ -38,7 +39,7 @@ OBJECTS = $(SAIGE_OBJECTS) $(GPU_OBJECTS)
 
 R_SCMD = ${R_HOME}/bin${R_ARCH_BIN}/Rscript -e
 ARMA_FLAGS = $(shell ${R_SCMD} "RcppArmadillo:::CxxFlags()")
-PKG_LIBS += -lcudart -lcublas
+PKG_LIBS += $(CUDA_LIBS)
 
 %.o: %.cu
 	$(NVCC) -DGPU -O2 -x cu -c -arch=sm_61 -Xcompiler "-fPIC $(ARMA_FLAGS)" $< -o $@
