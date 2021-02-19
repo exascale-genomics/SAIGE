@@ -1,7 +1,7 @@
 CXX_STD = CXX11 
 
 NVCC = nvcc
-CUDA_LIBS = -L/sw/summit/cuda/11.1.0/lib64 -lcudart -lcublas
+CUDA_LIBS = -L/sw/summit/cuda/11.1.0/lib64 -lcudart -lcublas -Wl,-rpath=-L/sw/summit/cuda/11.1.0/lib64
 
 LINALGLIBS = -lopenblas
 OPTFLAGS = -g0 -O3 -mcpu=native
