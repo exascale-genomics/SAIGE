@@ -95,7 +95,7 @@ download SAIGE
 ```bash
 export LC_ALL=en_US.UTF-8
 
-git clone --depth 1 -b master https://github.com/weizhouUMICH/SAIGE
+git clone --depth 1 -b master https://github.com/exascale-genomics/SAIGE
 rm -rf ./SAIGE/configure
 rm -rf ./SAIGE/src/*.o ./SAIGE/src/*.so
 rm -rf ./SAIGE/thirdParty/cget
@@ -112,7 +112,7 @@ CXX=g++ CC=gcc cget install -DCMAKE_C_FLAGS="-fPIC" -DCMAKE_CXX_FLAGS="-fPIC" --
 CXX=g++ CC=gcc cget install -DCMAKE_C_FLAGS="-fPIC" -DCMAKE_CXX_FLAGS="-fPIC" --prefix ./SAIGE/thirdParty/cget https://github.com/statgen/savvy/archive/v1.3.0.tar.gz
 
 cd ./SAIGE/thirdParty/bgen
-# NOTE: change first line of ./waf to use python2, i.e. make it: '#!/usr/bin/env python2'
+sed -i -e 1's/$/2 &/' waf
 ./waf configure
 ./waf
 cd ../../..
@@ -121,7 +121,6 @@ cd ../../..
 build SAIGE - make the changes listed in the NOTE
 
 ```
-# NOTE: change ./SAIGE/src/Makevars line 21 to include '-lopenblas' before $(LAPACK_LIBS)
 ${REXEC} CMD INSTALL SAIGE --library=${RLIB}
 ```
 
