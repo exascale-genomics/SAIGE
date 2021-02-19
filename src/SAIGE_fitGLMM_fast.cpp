@@ -15,10 +15,12 @@
 #include <boost/date_time.hpp> // for gettimeofday and timeval
 
 #include "linalg.hpp"
+#define NUM_GPUS 2
 
 using namespace Rcpp;
 using namespace std;
 using namespace RcppParallel;
+
 
 
 float minMAFtoConstructGRM = 0;
@@ -209,7 +211,7 @@ public:
                 grm.row(i) = vec;
             }
 
-            arma::fmat resultGRM = xtx_gemm((float)1.f/M, grm);
+            arma::fmat resultGRM = gpublas::xtx_gemm((float)1.f/M, grm, NUM_GPUS);
             std::cout << "Size in bytes of fullGRM is:" << sizeof(resultGRM/M) << std::endl;
 	    return(resultGRM); 
             //return(grm);
@@ -941,7 +943,7 @@ public:
   arma::fvec grm_times_vec(arma::fcolvec& bVec){
     arma::fvec resultVec(fullGRM.n_rows);
     
-    mvp_gemv(fullGRM, bVec, resultVec);
+    cpublas::mvp_gemv(fullGRM, bVec, resultVec);
     
     return(resultVec);
   }
