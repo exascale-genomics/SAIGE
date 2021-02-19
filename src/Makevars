@@ -37,7 +37,7 @@ GPU_OBJECTS = linalg.o
 OBJECTS = $(SAIGE_OBJECTS) $(GPU_OBJECTS)
 
 R_SCMD = ${R_HOME}/bin${R_ARCH_BIN}/Rscript -e
-ARMA_FLAGS = `RcppArmadillo:::CxxFlags()`
+ARMA_FLAGS = $(shell RcppArmadillo:::CxxFlags())
 
 %.o: %.cu
 	$(NVCC) -DGPU -O2 -x cu -c -arch=sm_61 -Xcompiler "-fPIC $(ARMA_FLAGS)" $< -o $@
