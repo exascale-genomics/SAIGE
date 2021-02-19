@@ -54,7 +54,7 @@ namespace gpublas
   
   
   
-  arma::fmat xtx_gemm(const float alpha, const arma::fmat &x, const int num_gpus=1)
+  arma::fmat xtx_gemm(const float alpha, const arma::fmat &x, const int num_gpus)
   {
     const int m = x.n_rows;
     const int n = x.n_cols;
@@ -92,7 +92,7 @@ namespace gpublas
   
   
   
-  arma::fmat xtx_syrk(const float alpha, const arma::fmat &x, const int num_gpus=1)
+  arma::fmat xtx_syrk(const float alpha, const arma::fmat &x, const int num_gpus)
   {
     const int m = x.n_rows;
     const int n = x.n_cols;
