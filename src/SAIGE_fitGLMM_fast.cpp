@@ -211,7 +211,7 @@ public:
                 grm.row(i) = vec;
             }
 
-            arma::fmat resultGRM = gpublas::xtx_gemm((float)1.f/M, grm, NUM_GPUS);
+            arma::fmat resultGRM = gpublas::xtx_syrk((float)1.f/M, grm, NUM_GPUS);
             std::cout << "Size in bytes of fullGRM is:" << sizeof(resultGRM/M) << std::endl;
 	    return(resultGRM); 
             //return(grm);
