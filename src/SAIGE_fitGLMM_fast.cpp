@@ -207,7 +207,7 @@ public:
             
             arma::fmat resultGRM;
             
-            if (geno.grm_read){
+            if (grm_read){
               resultGRM.load(grm_path, arma::hdf5_binary);
             } else {
               arma::fmat grm(M,N);
