@@ -489,4 +489,5 @@ gen_sp <- function(a) {
 
 setgeno_io <- function(path, read=TRUE) {
     .Call('_SAIGE_setgeno_io', PACKAGE = 'SAIGE', as.character(path), as.logical(read))
+    invisible()
 }

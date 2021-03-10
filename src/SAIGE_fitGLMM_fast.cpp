@@ -1661,6 +1661,8 @@ SEXP _SAIGE_setgeno_io(SEXP path_, SEXP read)
    geno.grm_path.assign(path);
    
    geno.grm_read = (bool) LOGICAL(read)[0];
+   
+   return R_NilValue;
 }
 
 
