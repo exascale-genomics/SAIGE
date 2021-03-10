@@ -205,7 +205,7 @@ public:
 
             std::cout<<"M by N size: "<<M<<" M, "<<N<<" N"<<std::endl;
             
-            arma::fmat resultGRM
+            arma::fmat resultGRM;
             
             if (geno.grm_read){
               resultGRM.load(grm_path, arma::hdf5_binary);
