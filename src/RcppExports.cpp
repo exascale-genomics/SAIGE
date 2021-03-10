@@ -1458,6 +1458,8 @@ BEGIN_RCPP
 END_RCPP
 }
 
+extern SEXP _SAIGE_setgeno_io(SEXP path, SEXP read);
+
 static const R_CallMethodDef CallEntries[] = {
     {"_SAIGE_SetSampleIdx_forGenetest_vcfDosage", (DL_FUNC) &_SAIGE_SetSampleIdx_forGenetest_vcfDosage, 2},
     {"_SAIGE_setMAFcutoffs", (DL_FUNC) &_SAIGE_setMAFcutoffs, 2},
@@ -1580,6 +1582,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_SAIGE_mult_sp_den_to_sp", (DL_FUNC) &_SAIGE_mult_sp_den_to_sp, 2},
     {"_SAIGE_mult_den_sp_to_sp", (DL_FUNC) &_SAIGE_mult_den_sp_to_sp, 2},
     {"_SAIGE_gen_sp", (DL_FUNC) &_SAIGE_gen_sp, 1},
+    {"_SAIGE_setgeno_io", (DL_FUNC) &_SAIGE_setgeno_io, 2},
     {NULL, NULL, 0}
 };
 

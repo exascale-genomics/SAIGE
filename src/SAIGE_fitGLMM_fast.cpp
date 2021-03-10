@@ -15,7 +15,6 @@
 #include <boost/date_time.hpp> // for gettimeofday and timeval
 
 #include "linalg.hpp"
-#define NUM_GPUS 2
 
 using namespace Rcpp;
 using namespace std;
@@ -36,6 +35,9 @@ private:
 
 
 public:
+   std::string grm_path;
+   bool grm_read;
+   
         //to chunk the geno vector to avoid large continuous memory usage 
 	int numMarkersofEachArray;
         int numofGenoArray;
@@ -202,19 +204,26 @@ public:
             unsigned int N = getNnomissing(); //sample count
 
             std::cout<<"M by N size: "<<M<<" M, "<<N<<" N"<<std::endl;
-
-            arma::fmat grm(M,N);
-	    arma::frowvec vec;
-
-	    for(unsigned int i = 0; i < M; i++){
+            
+            arma::fmat resultGRM
+            
+            if (geno.grm_read){
+              resultGRM.load(grm_path, arma::hdf5_binary);
+            } else {
+              arma::fmat grm(M,N);
+              arma::frowvec vec;
+              
+              for(unsigned int i = 0; i < M; i++){
                 Get_OneSNP_StdGeno_alex(i, &vec);
                 grm.row(i) = vec;
+              }
+              
+              resultGRM = cpublas::xtx_gemm((float)1.f/M, grm);
+              resultGRM.save(arma::hdf5_name(path, "grm"), arma::hdf5_binary);
             }
-
-            arma::fmat resultGRM = gpublas::xtx_syrk((float)1.f/M, grm, NUM_GPUS);
+            
             std::cout << "Size in bytes of fullGRM is:" << sizeof(resultGRM/M) << std::endl;
-	    return(resultGRM); 
-            //return(grm);
+            return(resultGRM); 
        }
    
 	arma::ivec * Get_OneSNP_Geno_atBeginning(size_t SNPIdx, vector<int> & indexNA, vector<unsigned char> & genoVecOneMarkerOld){
@@ -1644,6 +1653,15 @@ void  parallelsumTwoVec(arma::fvec &x) {
 
 }
 
+
+
+SEXP _SAIGE_setgeno_io(SEXP path_, SEXP read)
+{
+   char *path = ((char*)CHAR(STRING_ELT(path_, 0)));
+   geno.grm_path.assign(path);
+   
+   geno.grm_read = (bool) LOGICAL(read)[0];
+}
 
 
 // [[Rcpp::export]]
