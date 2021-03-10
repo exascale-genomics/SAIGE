@@ -219,7 +219,7 @@ public:
               }
               
               resultGRM = cpublas::xtx_gemm((float)1.f/M, grm);
-              resultGRM.save(arma::hdf5_name(path, "grm"), arma::hdf5_binary);
+              resultGRM.save(arma::hdf5_name(grm_path, "grm"), arma::hdf5_binary);
             }
             
             std::cout << "Size in bytes of fullGRM is:" << sizeof(resultGRM/M) << std::endl;
