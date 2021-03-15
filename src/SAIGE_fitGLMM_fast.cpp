@@ -1,3 +1,4 @@
+#define ARMA_USE_HDF5
 #define ARMA_DONT_USE_WRAPPER
 #define ARMA_USE_SUPERLU 1
 //[[Rcpp::depends(RcppArmadillo)]]
