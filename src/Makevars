@@ -3,6 +3,8 @@ CXX_STD = CXX11
 NVCC = nvcc
 CUDA_LIBS = -L/sw/summit/cuda/11.1.0/lib64 -lcudart -lcublas -Wl,-rpath=-L/sw/summit/cuda/11.1.0/lib64
 
+HDF5_LIBS = -lhdf5
+
 LINALGLIBS = -lopenblas
 OPTFLAGS = -g0 -O3 -mcpu=native
 
@@ -30,7 +32,7 @@ PKG_CPPFLAGS = \
 
 PKG_CXXFLAGS = $(OPTFLAGS)
 
-PKG_LIBS = $(ZLIB_LIB) $(LINALGLIBS) $(FLIBS) -L../bgen/3rd_party/boost_1_55_0/boost/iostreams -L../thirdParty/cget/lib/ -L../thirdParty/cget/lib64/ -lsavvy -lhts -lsuperlu
+PKG_LIBS = $(HDF5_LIBS) $(ZLIB_LIB) $(LINALGLIBS) $(FLIBS) -L../bgen/3rd_party/boost_1_55_0/boost/iostreams -L../thirdParty/cget/lib/ -L../thirdParty/cget/lib64/ -lsavvy -lhts -lsuperlu
 #PKG_LIBS += $(shell ${R_HOME}/bin/Rscript -e "RcppParallel::RcppParallelLibs()")
 
 SAIGE_OBJECTS = RcppExports.o test.o matrixMultiEigen.o SAIGE_fitGLMM_fast.o SAIGE_readDosage_bgen.o SAIGE_readDosage_vcf.o SAIGE_GENE_readDosageMatrix_vcf.o  $(wildcard ../thirdParty/bgen/build/src/*.o) ../thirdParty/bgen/build/db/libdb.a ../thirdParty/bgen/build/3rd_party/zstd-1.1.0/libzstd.a ../thirdParty/bgen/build/3rd_party/sqlite3/libsqlite3.a ../thirdParty/bgen/build/3rd_party/boost_1_55_0/libboost.a $(wildcard ../thirdParty/cget/lib64/*.a)
